@@ -2,8 +2,8 @@
 
 
 ################################################################################
-# Checks to see if user is root.
-# If not, it exits the script.
+# Check to see if user is root.
+# If not, exit the script.
 ################################################################################
 if [[ "$EUID" -ne 0 ]]; then
 	echo "Must be run as root."
@@ -14,8 +14,8 @@ fi
 
 
 ################################################################################
-# Checks to see if there are any software updates.
-# If not, it exits the script.
+# Check for available software updates.
+# If none exitt the script.
 ################################################################################
 function f_check_for_software_updates() {
 	echo
@@ -39,7 +39,7 @@ function f_check_for_software_updates() {
 
 
 ################################################################################
-# Checks to see if this version of macOS supports FDE AuthRestart.
+# Check current version of macOS for FDE AuthRestart support.
 ################################################################################
 function f_check_authrestart_status() {
 	v_authrestart_check=$(fdesetup supportsauthrestart)
@@ -53,7 +53,7 @@ function f_check_authrestart_status() {
 
 
 ################################################################################
-# Checks to see if FileVault is ON or OFF.
+# Check FileVault (ON/OFF) status.
 ################################################################################
 function f_check_filevault_status() {
 	v_fde_status=$(fdesetup status)
@@ -67,7 +67,7 @@ function f_check_filevault_status() {
 
 
 ################################################################################
-# Checks if the user wishes to proceed with the sw update with no AuthRestart.
+# Check if user wishes to proceed with software update with no AuthRestart.
 ################################################################################
 function f_sw_update_no_authrestart() {
 	choices=("Yes" "No")
@@ -94,7 +94,7 @@ function f_sw_update_no_authrestart() {
 
 
 ################################################################################
-# Checks how user wants to unlock FileVault, then updates accordingly.
+# Check how user wants to unlock FileVault, then update accordingly.
 ################################################################################
 function f_check_filevault_unlock_and_update() {
 	choices=("automatically" "manually")
