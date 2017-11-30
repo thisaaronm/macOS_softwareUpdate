@@ -22,7 +22,7 @@ function f_check_for_software_updates() {
 	echo "Checking for software updates. Please wait..."
 	echo
 
-	v_sw_status=$(softwareupdate -l | grep -i "recommended")
+	v_sw_status=$(softwareupdate --list | grep --install "recommended")
 
 	if [ -z "$v_sw_status" ]; then
 		echo "There are no updates available."
@@ -78,7 +78,7 @@ function f_sw_update_no_authrestart() {
 			Yes)
 				echo "Software update will begin..."
 				echo
-				bash -c "softwareupdate -ia && reboot"
+				bash -c "softwareupdate --install --all && reboot"
 				;;
 			No)
 				echo "Software update will not begin..."
