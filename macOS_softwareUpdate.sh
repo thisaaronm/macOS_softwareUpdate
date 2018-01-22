@@ -23,7 +23,7 @@ function f_check_for_software_updates() {
 	echo
 
 	v_sw_status=$(softwareupdate --list | grep "recommended")
-	v_sw_status_restart=$(software --list | grep "restart")
+	v_sw_status_restart=$(softwareupdate --list | grep "restart")
 
 	if [ "$v_sw_status" ]; then
 		if [ "$v_sw_status_restart" ]; then
@@ -33,11 +33,12 @@ function f_check_for_software_updates() {
 			echo "The following updates require a restart of your computer: "
 			echo "$v_sw_status_restart"
 			echo
-			read -n 1 -r -s -p "Press any key to continue, or CTRL+C to stop..."
+			read -p "Press Enter to continue, or CTRL+C to stop..."
 		else
 			echo "The following recommended updates are available: "
 			echo "$v_sw_status"
 			echo
+		fi
 	else
 		echo "There are no updates available."
 		echo "Exiting..."
