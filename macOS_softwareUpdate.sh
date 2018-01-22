@@ -15,25 +15,35 @@ fi
 
 ################################################################################
 # Check for available software updates.
-# If none exitt the script.
+# If none exit the script.
 ################################################################################
 function f_check_for_software_updates() {
 	echo
 	echo "Checking for software updates. Please wait..."
 	echo
 
-	v_sw_status=$(softwareupdate --list | grep --install "recommended")
+	v_sw_status=$(softwareupdate --list | grep "recommended")
+	v_sw_status_restart=$(software --list | grep "restart")
 
-	if [ -z "$v_sw_status" ]; then
+	if [ "$v_sw_status" ]; then
+		if [ "$v_sw_status_restart" ]; then
+			echo "The following recommended updates are available: "
+			echo "$v_sw_status"
+			echo
+			echo "The following updates require a restart of your computer: "
+			echo "$v_sw_status_restart"
+			echo
+			read -n 1 -r -s -p "Press any key to continue, or CTRL+C to stop..."
+		else
+			echo "The following recommended updates are available: "
+			echo "$v_sw_status"
+			echo
+	else
 		echo "There are no updates available."
 		echo "Exiting..."
 		sleep 3
 		echo
 		exit
-	else
-		echo "The following updates are available: "
-		echo "$v_sw_status"
-		sleep 3
 	fi
 }
 
