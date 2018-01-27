@@ -15,6 +15,7 @@ fi
 
 ################################################################################
 # Check for available software updates.
+# Confirm if user wishes to proceed, if restart is required.
 # If none exit the script.
 ################################################################################
 function f_check_for_software_updates() {
@@ -22,21 +23,31 @@ function f_check_for_software_updates() {
 	echo "Checking for software updates. Please wait..."
 	echo
 
-	v_sw_status=$(softwareupdate --list | grep "recommended")
-	v_sw_status_restart=$(softwareupdate --list | grep "restart")
+	v_sw_check=$(softwareupdate --list | grep -i "recommended")
+	v_sw_check_restart=$(softwareupdate --list | grep -i "restart")
 
-	if [ "$v_sw_status" ]; then
-		if [ "$v_sw_status_restart" ]; then
+	if [ "$v_sw_check" ]; then
+		if [ "$v_sw_check_restart" ]; then
+			echo "============================================================"
 			echo "The following recommended updates are available: "
-			echo "$v_sw_status"
+			echo "$v_sw_check"
 			echo
+			echo "============================================================"
+			echo
+			echo
+			echo "============================================================"
 			echo "The following updates require a restart of your computer: "
-			echo "$v_sw_status_restart"
+			echo "$v_sw_check_restart"
 			echo
-			read -p "Press Enter to continue, or CTRL+C to stop..."
+			echo "============================================================"
+			echo
+			echo
+			echo "If you wish to continue with the software update, press Enter."
+			echo "Otherwise, if you do not wish to restart your computer now,"
+			read -p "press CTRL+C to cancel the script... "
 		else
 			echo "The following recommended updates are available: "
-			echo "$v_sw_status"
+			echo "$v_sw_check"
 			echo
 		fi
 	else
@@ -45,6 +56,34 @@ function f_check_for_software_updates() {
 		sleep 3
 		echo
 		exit
+	fi
+}
+
+
+################################################################################
+# Set softwareupdate recommended status
+################################################################################
+function f_sw_update_status_rec() {
+	v_sw_update_status_rec=$(softwareupdate --list | grep -i "recommended")
+
+	if [ "$v_sw_update_status_rec" == true ]; then
+		echo "true"
+	elif [ "$v_sw_update_status_rec" == false ]; then
+		echo "false"
+	fi
+}
+
+
+################################################################################
+# Set softwareupdate restart status
+################################################################################
+function f_sw_update_status_res() {
+	v_sw_update_status_res=$(softwareupdate --list | grep -i "restart")
+
+	if [ "$v_sw_update_status_res" == true ]; then
+		echo "true"
+	elif [ "$v_sw_update_status_res" == false ]; then
+		echo "false"
 	fi
 }
 
