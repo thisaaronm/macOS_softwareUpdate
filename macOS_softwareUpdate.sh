@@ -23,8 +23,9 @@ function f_check_for_software_updates() {
 	echo "Checking for software updates. Please wait..."
 	echo
 
-	v_sw_check=$(softwareupdate --list | grep -i "recommended")
-	v_sw_check_restart=$(softwareupdate --list | grep -i "restart")
+	softwareupdate --list > /tmp/softwareupdate_tempfile
+	v_sw_check=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
+	v_sw_check_restart=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
 
 	if [ "$v_sw_check" ]; then
 		if [ "$v_sw_check_restart" ]; then
@@ -64,7 +65,7 @@ function f_check_for_software_updates() {
 # Set softwareupdate recommended status
 ################################################################################
 function f_sw_update_status_rec() {
-	v_sw_update_status_rec=$(softwareupdate --list | grep -i "recommended")
+	v_sw_update_status_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
 
 	if [ "$v_sw_update_status_rec" == true ]; then
 		echo "true"
@@ -78,7 +79,7 @@ function f_sw_update_status_rec() {
 # Set softwareupdate restart status
 ################################################################################
 function f_sw_update_status_res() {
-	v_sw_update_status_res=$(softwareupdate --list | grep -i "restart")
+	v_sw_update_status_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
 
 	if [ "$v_sw_update_status_res" == true ]; then
 		echo "true"
