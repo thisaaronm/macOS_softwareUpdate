@@ -2,21 +2,54 @@
 
 
 ################################################################################
-# Check to see if user is root.
-# If not, exit the script.
+## Check to see if user is root.
+## If not, exit the script.
 ################################################################################
-if [[ "$EUID" -ne 0 ]]; then
-	echo "Must be run as root."
-	echo "Exiting..."
-	sleep 3
-	exit 1
-fi
-
+function f_check_root() {
+	if [[ "$EUID" -ne 0 ]]; then
+		echo "Must be run as root."
+		echo "Exiting..."
+		sleep 3
+		exit 10
+	fi
+}
 
 ################################################################################
-# Check for available software updates.
-# Confirm if user wishes to proceed, if restart is required.
-# If none exit the script.
+## Check to see if -x switch was used.
+## If so, install Command Line Tools.
+## If not, do not install Command Line Tools.
+## Modifed from: https://stackoverflow.com/a/14447471
+################################################################################
+function f_check_getops() {
+	while getopts ":x" opts
+	do
+		case $opts in
+			x)
+				if xcode-select --install 2>&1 | grep -i "installed"; then
+					echo
+					sleep 3
+				else
+					echo
+					echo "Installing Command Line Tools..."
+					sleep 3
+					touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+					xcode-select --install
+				fi
+			;;
+			\?)
+				echo
+				echo "Invalid option: $OPTARG"
+				echo
+				exit 20
+			;;
+		esac
+	done
+}
+
+################################################################################
+## Check for available software updates.
+## Confirm if user wishes to proceed, if restart is required.
+## If none exit the script.
 ################################################################################
 function f_check_for_software_updates() {
 	echo
@@ -24,45 +57,44 @@ function f_check_for_software_updates() {
 	echo
 
 	softwareupdate --list > /tmp/softwareupdate_tempfile
-	v_sw_check=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
-	v_sw_check_restart=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
+	v_sw_check_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
+	v_sw_check_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
 
-	if [ "$v_sw_check" ]; then
-		if [ "$v_sw_check_restart" ]; then
-			echo "============================================================"
-			echo "The following recommended updates are available: "
-			echo "$v_sw_check"
-			echo
-			echo "============================================================"
-			echo
-			echo
-			echo "============================================================"
-			echo "The following updates require a restart of your computer: "
-			echo "$v_sw_check_restart"
-			echo
-			echo "============================================================"
+	if [ "$v_sw_check_rec" ]; then
+		if [ "$v_sw_check_res" ]; then
+			echo "==================================================================="
+			echo "The following updates are RECOMMENDED: "
+			echo "$v_sw_check_rec"
+			echo "==================================================================="
 			echo
 			echo
-			echo "If you wish to continue with the software update, press Enter."
-			echo "Otherwise, if you do not wish to restart your computer now,"
-			read -p "press CTRL+C to cancel the script... "
+			echo "==================================================================="
+			echo "The following updates require a RESTART of your computer: "
+			echo "$v_sw_check_res"
+			echo "==================================================================="
+			echo
+			echo
+			echo "If you wish to continue with the software update, WHICH WILL REQUIRE A RESTART, press Enter."
+			echo "Otherwise, if you DO NOT WISH TO RESTART your computer at this time, press CTRL+C."
+			echo
+			read -p "Enter or CTRL+C...? "
 		else
 			echo "The following recommended updates are available: "
-			echo "$v_sw_check"
+			echo "$v_sw_check_rec"
 			echo
 		fi
 	else
 		echo "There are no updates available."
 		echo "Exiting..."
-		sleep 3
 		echo
+		sleep 3
 		exit
 	fi
 }
 
 
 ################################################################################
-# Set softwareupdate recommended status
+## Set softwareupdate recommended status
 ################################################################################
 function f_sw_update_status_rec() {
 	v_sw_update_status_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
@@ -76,7 +108,7 @@ function f_sw_update_status_rec() {
 
 
 ################################################################################
-# Set softwareupdate restart status
+## Set softwareupdate restart status
 ################################################################################
 function f_sw_update_status_res() {
 	v_sw_update_status_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
@@ -90,7 +122,7 @@ function f_sw_update_status_res() {
 
 
 ################################################################################
-# Check current version of macOS for FDE AuthRestart support.
+## Check current version of macOS for FDE AuthRestart support.
 ################################################################################
 function f_check_authrestart_status() {
 	v_authrestart_check=$(fdesetup supportsauthrestart)
@@ -104,7 +136,7 @@ function f_check_authrestart_status() {
 
 
 ################################################################################
-# Check FileVault (ON/OFF) status.
+## Check FileVault (ON/OFF) status.
 ################################################################################
 function f_check_filevault_status() {
 	v_fde_status=$(fdesetup status)
@@ -118,7 +150,7 @@ function f_check_filevault_status() {
 
 
 ################################################################################
-# Check if user wishes to proceed with software update with no AuthRestart.
+## Check if user wishes to proceed with software update with no AuthRestart.
 ################################################################################
 function f_sw_update_no_authrestart() {
 	choices=("Yes" "No")
@@ -145,9 +177,9 @@ function f_sw_update_no_authrestart() {
 
 
 ################################################################################
-# Check how user wants to unlock FileVault, then update accordingly.
+## Check how user wants to unlock FileVault, then update and restart.
 ################################################################################
-function f_check_filevault_unlock_and_update() {
+function f_check_filevault_unlock_and_update_all() {
 	choices=("automatically" "manually")
 	echo "After installing updates, would you like to unlock FileVault: "
 	select choice in "${choices[@]}"
@@ -182,15 +214,57 @@ function f_check_filevault_unlock_and_update() {
 
 
 ################################################################################
-# RUN IT!
+## Install recommended updates only.
 ################################################################################
+function f_install_recommended_updates_only() {
+	choices=("Yes" "No")
+	echo "Proceed with installation of RECOMMENDED software update(s)?"
+	select choice in "${choices[@]}";
+	do
+		case $choice in
+			Yes)
+				echo "Software update will begin..."
+				echo
+				sleep 2
+				bash -c "softwareupdate --install --recommended"
+				;;
+			No)
+				echo "Software update will not begin..."
+				echo
+				echo "Exiting..."
+				echo
+				sleep 2
+				exit 30
+				;;
+		esac
+	done
+}
+
+
+################################################################################
+## RUN IT!
+################################################################################
+f_check_root
+f_check_getops
 f_check_for_software_updates
-v_authrestart=$(f_check_authrestart_status) # true or false
-v_filevault=$(f_check_filevault_status) # true or false
+
+v_update_rec=$(f_sw_update_status_rec) ## true or false
+v_update_res=$(f_sw_update_status_res) ## true or false
+v_authrestart=$(f_check_authrestart_status) ## true or false
+v_filevault=$(f_check_filevault_status) ## true or false
+
 
 if [ "$v_authrestart" == true ]; then
 	if [ "$v_filevault" == true ]; then
-		f_check_filevault_unlock_and_update
+		if [ "$v_update_rec" == true ]; then
+			if [ "$v_update_res" == true ]; then
+				f_check_filevault_unlock_and_update_all
+			elif [ "$v_update_res" == false ]; then
+				f_install_recommended_updates_only
+			fi
+		## no elif, because there won't be a situation where an
+		## update that requires a restart won't be recommended.
+		fi
 	elif [ "$v_filevault" == false ]; then
 		f_sw_update_no_authrestart
 	fi
