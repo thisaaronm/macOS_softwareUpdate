@@ -1,15 +1,15 @@
 #!/bin/bash
 
 
+## =============================== VARIABLES ================================ ##
 v_maxArgs=1
-v_swu_tmpfile="/tmp/softwareupdate_tempfile"
+v_swu_tmpfile="/tmp/.softwareupdate_tempfile"
 v_cli_tmpfile="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 
 
-################################################################################
+## =============================== FUNCTIONS ================================ ##
 ## Check to see if user is root.
 ## If not, exit the script.
-################################################################################
 function f_check_root() {
 	if [[ "$EUID" -ne 0 ]]; then
 		echo
@@ -20,9 +20,7 @@ function f_check_root() {
 }
 
 
-################################################################################
 ## Check the number of passed arguments.
-################################################################################
 function f_args_count() {
   if [[ $# -eq 0 ]]; then
 		:
@@ -39,9 +37,7 @@ function f_args_count() {
 }
 
 
-################################################################################
 ## Check that arg includes '-'
-################################################################################
 function f_args_check() {
 	for v_arg in "$@";
 	do
@@ -57,12 +53,10 @@ function f_args_check() {
 }
 
 
-################################################################################
 ## Check to see if -x switch was used.
 ## If so, install Command Line Tools.
 ## If not, do not install Command Line Tools.
 ## Modifed from: https://stackoverflow.com/a/14447471
-################################################################################
 function f_getopts_check() {
 	while getopts ":x" opts
 	do
@@ -93,11 +87,9 @@ function f_getopts_check() {
 }
 
 
-################################################################################
 ## Check for available software updates.
 ## Confirm if user wishes to proceed, if restart is required.
-## If none exit the script.
-################################################################################
+## If none, exit the script.
 function f_check_for_software_updates() {
 	echo
 	echo "Checking for software updates. Please wait..."
@@ -138,9 +130,7 @@ function f_check_for_software_updates() {
 }
 
 
-################################################################################
 ## Set softwareupdate recommended status
-################################################################################
 function f_sw_update_status_rec() {
 	v_sw_update_status_rec=$(cat $v_swu_tmpfile | grep -i "recommended")
 
@@ -152,9 +142,7 @@ function f_sw_update_status_rec() {
 }
 
 
-################################################################################
 ## Set softwareupdate restart status
-################################################################################
 function f_sw_update_status_res() {
 	v_sw_update_status_res=$(cat $v_swu_tmpfile | grep -i "restart")
 
@@ -166,9 +154,7 @@ function f_sw_update_status_res() {
 }
 
 
-################################################################################
 ## Check current version of macOS for FDE AuthRestart support.
-################################################################################
 function f_check_authrestart_status() {
 	v_authrestart_check=$(fdesetup supportsauthrestart)
 
@@ -180,9 +166,7 @@ function f_check_authrestart_status() {
 }
 
 
-################################################################################
 ## Check FileVault (ON/OFF) status.
-################################################################################
 function f_check_filevault_status() {
 	v_fde_status=$(fdesetup status)
 
@@ -194,9 +178,7 @@ function f_check_filevault_status() {
 }
 
 
-################################################################################
 ## Check if user wishes to proceed with software update with no AuthRestart.
-################################################################################
 function f_sw_update_no_authrestart() {
 	choices=("Yes" "No")
 	echo "Proceed with software update?"
@@ -219,9 +201,7 @@ function f_sw_update_no_authrestart() {
 }
 
 
-################################################################################
 ## Check how user wants to unlock FileVault, then update and restart.
-################################################################################
 function f_check_filevault_unlock_and_update_all() {
 	choices=("automatically" "manually")
 	echo "After installing updates, would you like to unlock FileVault: "
@@ -264,9 +244,7 @@ function f_check_filevault_unlock_and_update_all() {
 }
 
 
-################################################################################
 ## Install recommended updates only.
-################################################################################
 function f_install_recommended_updates_only() {
 	choices=("Yes" "No")
 	echo
@@ -297,9 +275,7 @@ function f_install_recommended_updates_only() {
 }
 
 
-################################################################################
-## RUN IT!
-################################################################################
+## ================================ RUN IT! ================================= ##
 f_check_root
 f_args_count "$@"
 f_getopts_check "$@"
@@ -307,9 +283,7 @@ f_check_for_software_updates
 
 
 v_update_rec=$(f_sw_update_status_rec)			## true or false
-# echo "v_update_rec is: $v_update_rec"
 v_update_res=$(f_sw_update_status_res)			## true or false
-# echo "v_update_res is: $v_update_res"
 v_authrestart=$(f_check_authrestart_status)	## true or false
 v_filevault=$(f_check_filevault_status)			## true or false
 
