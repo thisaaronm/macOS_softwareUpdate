@@ -2,7 +2,7 @@
 
 
 ## =============================== VARIABLES ================================ ##
-v_maxArgs=1
+v_max_args=1
 v_swu_tmpfile="/tmp/.softwareupdate_tempfile"
 v_cli_tmpfile="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 
@@ -24,13 +24,13 @@ function f_check_root() {
 function f_args_count() {
   if [[ $# -eq 0 ]]; then
 		:
-	elif [[ $# -gt 0 ]] && [[ $# -lt $(($v_maxArgs + 1)) ]]; then
+	elif [[ $# -gt 0 ]] && [[ $# -lt $(($v_max_args + 1)) ]]; then
 		f_args_check "$@"
 	else
 		echo
 		echo "Invalid number of arguments:"
 		echo "- Arugments passed: $#"
-		echo "- Arguments allowed: $v_maxArgs"
+		echo "- Arguments allowed: $v_max_args"
 		echo
 		exit 20
   fi
