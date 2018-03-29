@@ -1,5 +1,7 @@
 #!/bin/bash
 
+v_maxArgs=1
+
 
 ################################################################################
 ## Check to see if user is root.
@@ -7,12 +9,52 @@
 ################################################################################
 function f_check_root() {
 	if [[ "$EUID" -ne 0 ]]; then
-		echo "Must be run as root."
-		echo "Exiting..."
-		sleep 3
+		echo
+		echo "Must be run as root..."
+		echo
 		exit 10
 	fi
 }
+
+
+################################################################################
+## Check the number of passed arguments.
+################################################################################
+function f_args_count() {
+  if [[ $# -eq 0 ]]; then
+		:
+	elif [[ $# -gt 0 ]] && [[ $# -lt $(($v_maxArgs + 1)) ]]; then
+		f_args_check "$@"
+	else
+		echo
+		echo "Invalid number of arguments:"
+		echo "- Arugments passed: $#"
+		echo "- Arguments allowed: $v_maxArgs"
+		echo
+		exit 20
+  fi
+}
+
+
+################################################################################
+## Check that arg includes '-'
+################################################################################
+function f_args_check() {
+	for v_arg in "$@";
+	do
+		if [[ $v_arg =~ ^\-.$ ]]; then
+			:
+		else
+			echo
+			echo "Invalid argument: $v_arg. Must include: - "
+			echo
+			exit 30
+	  fi
+	done
+}
+
+
+
 
 ################################################################################
 ## Check to see if -x switch was used.
@@ -20,18 +62,21 @@ function f_check_root() {
 ## If not, do not install Command Line Tools.
 ## Modifed from: https://stackoverflow.com/a/14447471
 ################################################################################
-function f_check_getops() {
+function f_getopts_check() {
 	while getopts ":x" opts
 	do
 		case $opts in
 			x)
-				if xcode-select --install 2>&1 | grep -i "installed"; then
+				if xcode-select --install 2>&1 | grep -i "installed" >/dev/null; then
 					echo
-					sleep 3
+					echo "Command Line Tools are already installed..."
 				else
 					echo
+					echo "Command Line Tools installation will begin in 10 seconds."
+					echo "Press CTRL+C to cancel..."
+					echo
+					sleep 10
 					echo "Installing Command Line Tools..."
-					sleep 3
 					touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 					xcode-select --install
 				fi
@@ -40,11 +85,12 @@ function f_check_getops() {
 				echo
 				echo "Invalid option: $OPTARG"
 				echo
-				exit 20
+				exit 40
 			;;
 		esac
 	done
 }
+
 
 ################################################################################
 ## Check for available software updates.
@@ -60,35 +106,33 @@ function f_check_for_software_updates() {
 	v_sw_check_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
 	v_sw_check_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
 
-	if [ "$v_sw_check_rec" ]; then
-		if [ "$v_sw_check_res" ]; then
+	if [[ $v_sw_check_rec ]]; then
+		if [[ $v_sw_check_res ]]; then
 			echo "==================================================================="
-			echo "The following updates are RECOMMENDED: "
+			echo "The following updates are RECOMMENDED:"
 			echo "$v_sw_check_rec"
 			echo "==================================================================="
 			echo
 			echo
 			echo "==================================================================="
-			echo "The following updates require a RESTART of your computer: "
+			echo "The following updates require a RESTART of your computer:"
 			echo "$v_sw_check_res"
 			echo "==================================================================="
 			echo
 			echo
-			echo "If you wish to continue with the software update, WHICH WILL REQUIRE A RESTART, press Enter."
-			echo "Otherwise, if you DO NOT WISH TO RESTART your computer at this time, press CTRL+C."
+			echo "To continue with the software update, WHICH WILL REQUIRE A RESTART, press Enter."
+			echo "If you DO NOT WISH TO RESTART your computer at this time, press CTRL+C."
 			echo
 			read -p "Enter or CTRL+C...? "
 		else
-			echo "The following recommended updates are available: "
+			echo "The following recommended updates are available:"
 			echo "$v_sw_check_rec"
 			echo
 		fi
 	else
-		echo "There are no updates available."
 		echo "Exiting..."
 		echo
-		sleep 3
-		exit
+		exit 50
 	fi
 }
 
@@ -99,10 +143,10 @@ function f_check_for_software_updates() {
 function f_sw_update_status_rec() {
 	v_sw_update_status_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
 
-	if [ "$v_sw_update_status_rec" == true ]; then
-		echo "true"
-	elif [ "$v_sw_update_status_rec" == false ]; then
+	if [ -z "$v_sw_update_status_rec" ]; then
 		echo "false"
+	else
+		echo "true"
 	fi
 }
 
@@ -113,10 +157,10 @@ function f_sw_update_status_rec() {
 function f_sw_update_status_res() {
 	v_sw_update_status_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
 
-	if [ "$v_sw_update_status_res" == true ]; then
-		echo "true"
-	elif [ "$v_sw_update_status_res" == false ]; then
+	if [ -z "$v_sw_update_status_res" ]; then
 		echo "false"
+	else
+		echo "true"
 	fi
 }
 
@@ -127,10 +171,10 @@ function f_sw_update_status_res() {
 function f_check_authrestart_status() {
 	v_authrestart_check=$(fdesetup supportsauthrestart)
 
-	if [ "$v_authrestart_check" == true ]; then
-		echo "true"
-	elif [ "$v_authrestart_check" == false ]; then
+	if [ -z "$v_authrestart_check" ]; then
 		echo "false"
+	else
+		echo "true"
 	fi
 }
 
@@ -165,11 +209,9 @@ function f_sw_update_no_authrestart() {
 				;;
 			No)
 				echo "Software update will not begin..."
-				sleep 1
 				echo "Exiting..."
 				echo
-				sleep 3
-				exit
+				exit 60
 				;;
 		esac
 	done
@@ -182,28 +224,36 @@ function f_sw_update_no_authrestart() {
 function f_check_filevault_unlock_and_update_all() {
 	choices=("automatically" "manually")
 	echo "After installing updates, would you like to unlock FileVault: "
+	echo
+	echo "	automatically:"
+	echo "		You will be prompted for your passphrase prior to reboot. Upon"
+	echo "    completion of the software update and restart, FileVault will"
+	echo "		unlock automatically, bringing you straight to the login screen."
+	echo
+	echo "	manually:"
+	echo "		You will not be prompted for your passphrase prior to reboot."
+	echo "		Upon completion of the software update and restart, FileVault must"
+	echo "		unlocked manually, prior to landing at the login screen."
+	echo
 	select choice in "${choices[@]}"
 	do
 		case $choice in
 			"automatically")
-				echo "You will be prompted for your passphrase prior to reboot. This will,"
-				echo "upon completion of the software update installation, automatically"
-				echo "unlock FileVault, bringing you straight to the login screen."
 				echo
-				echo "If you want to cancel, press CTRL+C to EXIT."
-				echo "Otherwise, the software update will begin in 10 seconds..."
+				echo "FileVault will be unlocked automatically."
+				echo
+				echo "Software update will begin in 10 seconds..."
+				echo "To cancel and exit, press CTRL+C."
 				echo
 				sleep 10
 				bash -c "softwareupdate --install --all && fdesetup authrestart"
 				;;
 			"manually")
-				echo "You will not be prompted for your passphrase prior to reboot."
-				echo "This means that you will not skip the unlock screen, and will,"
-				echo "upon completion of the software update installation, be required"
-				echo "to manually unlock FileVault, prior to arriving at the login screen."
 				echo
-				echo "If you want to cancel, press CTRL+C to EXIT."
-				echo "Otherwise, the software update will begin in 10 seconds..."
+				echo "FileVault will not be unlocked automatically."
+				echo
+				echo "Software update will begin in 10 seconds..."
+				echo "To cancel and exit, press CTRL+C."
 				echo
 				sleep 10
 				bash -c "softwareupdate --install --all && reboot"
@@ -218,23 +268,28 @@ function f_check_filevault_unlock_and_update_all() {
 ################################################################################
 function f_install_recommended_updates_only() {
 	choices=("Yes" "No")
-	echo "Proceed with installation of RECOMMENDED software update(s)?"
+	echo
+	echo "Install RECOMMENDED software update(s)?"
 	select choice in "${choices[@]}";
 	do
 		case $choice in
 			Yes)
-				echo "Software update will begin..."
+				echo
+				echo "Installating RECOMMENDED software update(s)..."
 				echo
 				sleep 2
 				bash -c "softwareupdate --install --recommended"
+				echo
+				exit 70
 				;;
 			No)
-				echo "Software update will not begin..."
+				echo
+				echo "Installation of RECOMMENDED software updates(s) cancelled."
 				echo
 				echo "Exiting..."
 				echo
 				sleep 2
-				exit 30
+				exit 80
 				;;
 		esac
 	done
@@ -245,14 +300,19 @@ function f_install_recommended_updates_only() {
 ## RUN IT!
 ################################################################################
 f_check_root
-f_check_getops
+f_args_count "$@"
+f_getopts_check "$@"
 f_check_for_software_updates
 
-v_update_rec=$(f_sw_update_status_rec) ## true or false
-v_update_res=$(f_sw_update_status_res) ## true or false
-v_authrestart=$(f_check_authrestart_status) ## true or false
-v_filevault=$(f_check_filevault_status) ## true or false
+v_update_rec=$(f_sw_update_status_rec)			## true or false
+# echo "v_update_rec is: $v_update_rec"
+v_update_res=$(f_sw_update_status_res)			## true or false
+# echo "v_update_res is: $v_update_res"
+v_authrestart=$(f_check_authrestart_status)	## true or false
+v_filevault=$(f_check_filevault_status)			## true or false
 
+rm -f /tmp/softwareupdate_tempfile
+rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 
 if [ "$v_authrestart" == true ]; then
 	if [ "$v_filevault" == true ]; then
