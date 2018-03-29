@@ -1,6 +1,9 @@
 #!/bin/bash
 
+
 v_maxArgs=1
+v_swu_tmpfile="/tmp/softwareupdate_tempfile"
+v_cli_tmpfile="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 
 
 ################################################################################
@@ -54,8 +57,6 @@ function f_args_check() {
 }
 
 
-
-
 ################################################################################
 ## Check to see if -x switch was used.
 ## If so, install Command Line Tools.
@@ -77,7 +78,7 @@ function f_getopts_check() {
 					echo
 					sleep 10
 					echo "Installing Command Line Tools..."
-					touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+					touch $v_cli_tmpfile
 					xcode-select --install
 				fi
 			;;
@@ -102,9 +103,9 @@ function f_check_for_software_updates() {
 	echo "Checking for software updates. Please wait..."
 	echo
 
-	softwareupdate --list > /tmp/softwareupdate_tempfile
-	v_sw_check_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
-	v_sw_check_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
+	softwareupdate --list > $v_swu_tmpfile
+	v_sw_check_rec=$(cat $v_swu_tmpfile | grep -i "recommended")
+	v_sw_check_res=$(cat $v_swu_tmpfile | grep -i "restart")
 
 	if [[ $v_sw_check_rec ]]; then
 		if [[ $v_sw_check_res ]]; then
@@ -141,7 +142,7 @@ function f_check_for_software_updates() {
 ## Set softwareupdate recommended status
 ################################################################################
 function f_sw_update_status_rec() {
-	v_sw_update_status_rec=$(cat /tmp/softwareupdate_tempfile | grep -i "recommended")
+	v_sw_update_status_rec=$(cat $v_swu_tmpfile | grep -i "recommended")
 
 	if [ -z "$v_sw_update_status_rec" ]; then
 		echo "false"
@@ -155,7 +156,7 @@ function f_sw_update_status_rec() {
 ## Set softwareupdate restart status
 ################################################################################
 function f_sw_update_status_res() {
-	v_sw_update_status_res=$(cat /tmp/softwareupdate_tempfile | grep -i "restart")
+	v_sw_update_status_res=$(cat $v_swu_tmpfile | grep -i "restart")
 
 	if [ -z "$v_sw_update_status_res" ]; then
 		echo "false"
@@ -304,6 +305,7 @@ f_args_count "$@"
 f_getopts_check "$@"
 f_check_for_software_updates
 
+
 v_update_rec=$(f_sw_update_status_rec)			## true or false
 # echo "v_update_rec is: $v_update_rec"
 v_update_res=$(f_sw_update_status_res)			## true or false
@@ -311,8 +313,10 @@ v_update_res=$(f_sw_update_status_res)			## true or false
 v_authrestart=$(f_check_authrestart_status)	## true or false
 v_filevault=$(f_check_filevault_status)			## true or false
 
-rm -f /tmp/softwareupdate_tempfile
-rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
+
+rm -f $v_swu_tmpfile
+rm -f $v_cli_tmpfile
+
 
 if [ "$v_authrestart" == true ]; then
 	if [ "$v_filevault" == true ]; then
