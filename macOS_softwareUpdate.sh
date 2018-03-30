@@ -72,7 +72,9 @@ function f_getopts_check() {
 				echo "Installing $v_cli_check..."
 				echo
 				softwareupdate --install "$v_cli_check" --verbose
+				echo
 				echo "$v_cli_check installed."
+				rm -f $v_cli_tmpfile
 			;;
 			\?)
 				echo
@@ -121,6 +123,7 @@ function f_check_for_software_updates() {
 			echo
 		fi
 	else
+		rm -f $v_swu_tmpfile
 		echo "Exiting..."
 		echo
 		exit 50
@@ -202,15 +205,16 @@ function f_sw_update_no_authrestart() {
 ## Check how user wants to unlock FileVault, then update and restart.
 function f_check_filevault_unlock_and_update_all() {
 	choices=("automatically" "manually")
+	echo
 	echo "After installing updates, would you like to unlock FileVault: "
 	echo
 	echo "	automatically:"
-	echo "		You will be prompted for your passphrase prior to reboot. Upon"
-	echo "    completion of the software update and restart, FileVault will"
+	echo "		You will be prompted for your passphrase prior to restart. Upon"
+	echo "		completion of the software update and restart, FileVault will"
 	echo "		unlock automatically, bringing you straight to the login screen."
 	echo
 	echo "	manually:"
-	echo "		You will not be prompted for your passphrase prior to reboot."
+	echo "		You will not be prompted for your passphrase prior to restart."
 	echo "		Upon completion of the software update and restart, FileVault must"
 	echo "		unlocked manually, prior to landing at the login screen."
 	echo
@@ -287,7 +291,6 @@ v_filevault=$(f_check_filevault_status)			## true or false
 
 
 rm -f $v_swu_tmpfile
-rm -f $v_cli_tmpfile
 
 
 if [ "$v_authrestart" == true ]; then
