@@ -3,7 +3,7 @@
 
 ## =============================== VARIABLES ================================ ##
 v_max_args=1
-v_swu_tmpfile="/tmp/.softwareupdate_tempfile"
+v_swu_tmpfile="/tmp/.macOS_softwareupdate_tempfile"
 v_cli_tmpfile="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 
 
@@ -62,19 +62,17 @@ function f_getopts_check() {
 	do
 		case $opts in
 			x)
-				if xcode-select --install 2>&1 | grep -i "installed" >/dev/null; then
-					echo
-					echo "Command Line Tools are already installed..."
-				else
-					echo
-					echo "Command Line Tools installation will begin in 10 seconds."
-					echo "Press CTRL+C to cancel..."
-					echo
-					sleep 10
-					echo "Installing Command Line Tools..."
-					touch $v_cli_tmpfile
-					xcode-select --install
-				fi
+				touch $v_cli_tmpfile
+				echo
+				echo "Checking for latest version of Command Line Tools..."
+
+				v_cli_check=$(softwareupdate -l | grep "\* Command Line Tools" |
+					tail -n 1 | awk -F"*" '{print $2}' | sed -e 's/^ //g' | tr -d '\n')
+
+				echo "Installing $v_cli_check..."
+				echo
+				softwareupdate --install "$v_cli_check" --verbose
+				echo "$v_cli_check installed."
 			;;
 			\?)
 				echo
