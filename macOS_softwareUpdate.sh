@@ -2,10 +2,10 @@
 
 
 ## =============================== VARIABLES ================================ ##
-v_max_args=1
+v_max_args=2
 v_swu_tmpfile="/tmp/.macOS_softwareupdate_tempfile"
 v_cli_tmpfile="/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
-
+v_force_install=0
 
 ## =============================== FUNCTIONS ================================ ##
 ## Check to see if user is root.
@@ -58,9 +58,12 @@ function f_args_check() {
 ## If not, do not install Command Line Tools.
 ## Modifed from: https://stackoverflow.com/a/14447471
 function f_getopts_check() {
-	while getopts ":x" opts
+	while getopts ":fx" opts
 	do
 		case $opts in
+			f)
+				v_force_install=1
+			;;
 			x)
 				touch $v_cli_tmpfile
 				echo
@@ -101,27 +104,33 @@ function f_check_for_software_updates() {
 
 	if [[ $v_sw_check_rec ]]; then
 		if [[ $v_sw_check_res ]]; then
-			echo "==================================================================="
-			echo "The following updates are RECOMMENDED:"
-			echo "$v_sw_check_rec"
-			echo "==================================================================="
-			echo
-			echo
-			echo "==================================================================="
-			echo "The following updates require a RESTART of your computer:"
-			echo "$v_sw_check_res"
-			echo "==================================================================="
-			echo
-			echo
-			echo "To continue with the software update, WHICH WILL REQUIRE A RESTART, press Enter."
-			echo "If you DO NOT WISH TO RESTART your computer at this time, press CTRL+C."
-			echo
-			read -p "Enter or CTRL+C...? "
+			if [[ $v_force_install -eq 1 ]]; then
+				:
+			else
+				echo "==================================================================="
+				echo "The following updates are RECOMMENDED:"
+				echo "$v_sw_check_rec"
+				echo "==================================================================="
+				echo
+				echo
+				echo "==================================================================="
+				echo "The following updates require a RESTART of your computer:"
+				echo "$v_sw_check_res"
+				echo "==================================================================="
+				echo
+				echo
+				echo "To continue with the software update, WHICH WILL REQUIRE A RESTART, press Enter."
+				echo "If you DO NOT WISH TO RESTART your computer at this time, press CTRL+C."
+				echo
+				read -p "Enter or CTRL+C...? "
+			fi
 		else
 			echo "The following recommended updates are available:"
 			echo "$v_sw_check_rec"
 			echo
 		fi
+	elif [[ $v_force_install -eq 1 ]]; then
+		:
 	else
 		rm -f $v_swu_tmpfile
 		echo "Exiting..."
@@ -189,7 +198,7 @@ function f_sw_update_no_authrestart() {
 			Yes)
 				echo "Software update will begin..."
 				echo
-				bash -c "softwareupdate --install --all && reboot"
+				bash -c "softwareupdate --install --all --verbose && reboot"
 				;;
 			No)
 				echo "Software update will not begin..."
@@ -229,7 +238,7 @@ function f_check_filevault_unlock_and_update_all() {
 				echo "To cancel and exit, press CTRL+C."
 				echo
 				sleep 10
-				bash -c "softwareupdate --install --all && fdesetup authrestart"
+				bash -c "softwareupdate --install --all --verbose && fdesetup authrestart"
 				;;
 			"manually")
 				echo
@@ -239,7 +248,7 @@ function f_check_filevault_unlock_and_update_all() {
 				echo "To cancel and exit, press CTRL+C."
 				echo
 				sleep 10
-				bash -c "softwareupdate --install --all && reboot"
+				bash -c "softwareupdate --install --all --verbose && reboot"
 				;;
 		esac
 	done
@@ -259,7 +268,7 @@ function f_install_recommended_updates_only() {
 				echo "Installating RECOMMENDED software update(s)..."
 				echo
 				sleep 2
-				bash -c "softwareupdate --install --recommended"
+				bash -c "softwareupdate --install --recommended --verbose"
 				echo
 				exit 70
 				;;
@@ -277,6 +286,27 @@ function f_install_recommended_updates_only() {
 }
 
 
+f_force_install_res() {
+	echo
+	echo "Installing ALL software update(s) in 10 seconds, followed by a reboot."
+	echo "To cancel, press CTRL+C..."
+	echo
+	sleep 10
+	softwareupdate --install --all --verbose && reboot
+}
+
+
+f_force_install_rec() {
+	echo
+	echo "Installating RECOMMENDED software update(s) in 10 seconds."
+	echo "To cancel, press CTRL+C..."
+	echo
+	sleep 10
+	softwareupdate --install --recommended --verbose
+	exit 90
+}
+
+
 ## ================================ RUN IT! ================================= ##
 f_check_root
 f_args_count "$@"
@@ -284,13 +314,21 @@ f_getopts_check "$@"
 f_check_for_software_updates
 
 
-v_update_rec=$(f_sw_update_status_rec)			## true or false
-v_update_res=$(f_sw_update_status_res)			## true or false
 v_authrestart=$(f_check_authrestart_status)	## true or false
 v_filevault=$(f_check_filevault_status)			## true or false
-
+v_update_rec=$(f_sw_update_status_rec)			## true or false
+v_update_res=$(f_sw_update_status_res)			## true or false
 
 rm -f $v_swu_tmpfile
+
+
+if [[ $v_update_res == true ]] && [[ $v_force_install -eq 1 ]]; then
+	f_force_install_res
+elif [[ $v_update_rec == true ]] && [[ $v_force_install -eq 1 ]]; then
+	f_force_install_rec
+else
+	:
+fi
 
 
 if [ "$v_authrestart" == true ]; then
