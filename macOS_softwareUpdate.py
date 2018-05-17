@@ -9,8 +9,6 @@ import argparse
 
 ## =============================== VARIABLES ================================ ##
 v_max_args      = 2
-v_install_tools = False
-v_install_force = False
 v_swu_tmpfile   = "/tmp/.macOS_softwareupdate_tempfile"
 v_cli_tmpfile   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 
@@ -24,7 +22,7 @@ def f_check_root():
     v_euid = os.geteuid()
     if v_euid != 0:
         print("\nMust be run as root...\n")
-        exit(10)
+        sys.exit(10)
 
 
 def f_args_count():
@@ -39,7 +37,7 @@ def f_args_count():
         print(f"""\nInvalid Number of arguments:
         - Arguments passed: {len(sys.argv) - 1}
         - Arguments allowed: {v_max_args}""")
-        exit(20)
+        sys.exit(20)
 
 
 def f_args_check():
@@ -47,21 +45,15 @@ def f_args_check():
     Checks for optional arguments.
     '''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--force', help='Installs updates with no confirmation',
+    parser.add_argument('-f', '--force',
+                        help='Installs updates with no confirmation',
                         action='store_true')
-    parser.add_argument('-t', '--tools', help='Installs Command Line Tools',
+    parser.add_argument('-t', '--tools',
+                        help='Installs Command Line Tools',
                         action='store_true')
     args = parser.parse_args()
 
-    if args.tools:
-        global v_install_tools
-        v_install_tools = True
-
-    if args.force:
-        global v_install_force
-        v_install_force = True
-
-    return(v_install_tools, v_install_force)
+    return(args.tools, args.force)
 
 
 def f_install_tools():
@@ -86,14 +78,13 @@ def f_install_tools():
     os.remove(v_cli_tmpfile)
 
 
-## ================================ RUN IT! ================================= ##
-if __name__ == "__main__":
+def main():
     ## Due to the use of f-strings, Python 3.6 is required. Sorry.
     if sys.version_info[:2] == (3, 6):
         pass
     else:
         print("\nPython 3.6 required.\nExiting...")
-        exit(9)
+        sys.exit(9)
 
     # f_check_root()
 
@@ -103,30 +94,37 @@ if __name__ == "__main__":
         os.remove(v_cli_tmpfile)
     except Exception as e:
         if e.errno == 2:
-            ## If the file doesn't exist,
-            ## that's good, so pass.
+            ## If the file doesn't exist, that's good, so pass.
             pass
         elif e.errno == 13:
             ## If permission to delete file is denied, exit.
-            ## This won't happen if run as root,
-            ## but catching it anyway, just in case.
+            ## This won't happen if run as root, but catching it anyway.
             print(f"\nDelete {v_cli_tmpfile} first, then try again.")
-            exit(99)
+            sys.exit(99)
         else:
             ## If something else happens, hold your horses.
             print(e)
-            exit(999)
+            sys.exit(999)
 
     if f_args_count():
         if f_args_check()[0]:
-            ## If v_install_tools is True,
-            ## install Command Line tools
+            ## If args.tools is True, install Command Line tools
             print("tools is true")
             #f_install_tools()
 
         if f_args_check()[1]:
-            ## If v_install_force is True,
-            ## install all updates without confirmation.
+            ## If args.force is True, install all updates without confirmation.
             print("force is true")
     else:
         print("Do more stuff here.")
+        time.sleep(10)
+
+
+## ================================ RUN IT! ================================= ##
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt as eki:
+        print("\nReceived CTRL+C.\nExiting...\n")
+    except Exception as e:
+        print(e)
