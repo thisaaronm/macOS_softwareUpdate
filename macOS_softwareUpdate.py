@@ -13,10 +13,10 @@ v_cli_tmpfile   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progre
 
 ## =============================== FUNCTIONS ================================ ##
 def f_check_root():
-    '''
+    """
     Checks to see if user is root.
     If not, exit the script.
-    '''
+    """
     v_euid = os.geteuid()
     if v_euid != 0:
         print("\nMust be run as root...\n")
@@ -24,9 +24,9 @@ def f_check_root():
 
 
 def f_args_count():
-    '''
+    """
     Checks the number of arguments.
-    '''
+    """
     if len(sys.argv) == 1:
         return False
     elif len(sys.argv) > 1 and len(sys.argv) < (v_max_args + 2):
@@ -39,9 +39,9 @@ def f_args_count():
 
 
 def f_args_check():
-    '''
+    """
     Checks for optional arguments.
-    '''
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--force',
                         help='Install updates with no confirmation',
@@ -55,9 +55,9 @@ def f_args_check():
 
 
 def f_install_tools():
-    '''
+    """
     If [-t|--tools] is passed, install Command Line Tools.
-    '''
+    """
     print("\nChecking for latest version of Command Line Tools...")
 
     open(v_cli_tmpfile, 'w').close()
@@ -78,9 +78,9 @@ def f_install_tools():
 
 
 def f_install_force():
-    '''
+    """
     If [-f|--force] is passed, install updates with no confirmation.
-    '''
+    """
     print("\nInstalling ALL software update(s) in 10 seconds, followed by a reboot. \
     \nTo cancel, press CTRL+C...\n")
     time.sleep(10)
