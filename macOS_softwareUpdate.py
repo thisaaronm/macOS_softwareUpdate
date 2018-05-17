@@ -126,5 +126,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt as eki:
         print("\nReceived CTRL+C.\nExiting...\n")
+        sys.exit(0)
     except Exception as e:
         print(e)
+        sys.exit(1)
