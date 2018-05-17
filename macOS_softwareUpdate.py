@@ -6,12 +6,10 @@ import subprocess
 import time
 import argparse
 
-
 ## =============================== VARIABLES ================================ ##
 v_max_args      = 2
 v_swu_tmpfile   = "/tmp/.macOS_softwareupdate_tempfile"
 v_cli_tmpfile   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
-
 
 ## =============================== FUNCTIONS ================================ ##
 def f_check_root():
@@ -46,10 +44,10 @@ def f_args_check():
     '''
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--force',
-                        help='Installs updates with no confirmation',
+                        help='Install updates with no confirmation',
                         action='store_true')
     parser.add_argument('-t', '--tools',
-                        help='Installs Command Line Tools',
+                        help='Install Command Line Tools',
                         action='store_true')
     args = parser.parse_args()
 
@@ -69,13 +67,25 @@ def f_install_tools():
         shell=True, stdout=subprocess.PIPE)
     v_cli_check = (result.stdout).decode('ascii')
 
-    print(f"\nInstalling {v_cli_check}...\n")
+    print(f"\nInstalling {v_cli_check} in 10 seconds.\nTo cancel, press CTRL+C...\n")
+    time.sleep(10)
 
     subprocess.run(["softwareupdate", "--install", v_cli_check, "--verbose"])
 
     print(f"\n{v_cli_check} installed.")
 
     os.remove(v_cli_tmpfile)
+
+
+def f_install_force():
+    '''
+    If [-f|--force] is passed, install updates with no confirmation.
+    '''
+    print("\nInstalling ALL software update(s) in 10 seconds, followed by a reboot. \
+    \nTo cancel, press CTRL+C...\n")
+    time.sleep(10)
+
+    subprocess.run(["softwareupdate", "--install", "--all", "--verbose", "&&", "reboot"])
 
 
 def main():
@@ -110,11 +120,12 @@ def main():
         if f_args_check()[0]:
             ## If args.tools is True, install Command Line tools
             print("tools is true")
-            #f_install_tools()
+            f_install_tools()
 
         if f_args_check()[1]:
             ## If args.force is True, install all updates without confirmation.
             print("force is true")
+            f_install_force()
     else:
         print("Do more stuff here.")
         time.sleep(10)
