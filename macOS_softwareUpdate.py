@@ -6,10 +6,12 @@ import subprocess
 import time
 import argparse
 
+
 ## =============================== VARIABLES ================================ ##
-v_max_args      = 2
-v_swu_tmpfile   = "/tmp/.macOS_softwareupdate_tempfile"
-v_cli_tmpfile   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+v_max_args  = 2
+v_swu_tmp   = "/tmp/.macOS_softwareupdate_tempfile"
+v_cli_tmp   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
+
 
 ## =============================== FUNCTIONS ================================ ##
 def f_check_root():
@@ -28,7 +30,7 @@ def f_args_count():
     Checks the number of arguments.
     """
     if len(sys.argv) == 1:
-        return False
+        pass
     elif len(sys.argv) > 1 and len(sys.argv) < (v_max_args + 2):
         return True
     else:
@@ -50,7 +52,6 @@ def f_args_check():
                         help='Install Command Line Tools',
                         action='store_true')
     args = parser.parse_args()
-
     return(args.tools, args.force)
 
 
@@ -59,8 +60,7 @@ def f_install_tools():
     If [-t|--tools] is passed, install Command Line Tools.
     """
     print("\nChecking for latest version of Command Line Tools...")
-
-    open(v_cli_tmpfile, 'w').close()
+    open(v_cli_tmp, 'w').close()
 
     result = subprocess.run("softwareupdate -l | grep '* Command Line Tools' | \
         tail -n 1 | awk -F'*' '{print $2}' | sed -e 's/^ //g' | tr -d '\n'",
@@ -73,8 +73,7 @@ def f_install_tools():
     subprocess.run(["softwareupdate", "--install", v_cli_check, "--verbose"])
 
     print(f"\n{v_cli_check} installed.")
-
-    os.remove(v_cli_tmpfile)
+    os.remove(v_cli_tmp)
 
 
 def f_install_force():
@@ -88,6 +87,68 @@ def f_install_force():
     subprocess.run(["softwareupdate", "--install", "--all", "--verbose", "&&", "reboot"])
 
 
+def f_check_for_software_updates():
+    """
+    Checks for available software updates.
+    Confirm if user wishes to proceed, if restart is required.
+    If none, exit.
+    """
+    recommended = False
+    restart     = False
+    test        = False
+
+    print("\nChecking for software updates. Please wait...\n")
+
+    result  = subprocess.run(["softwareupdate", "--list"], stdout=subprocess.PIPE)
+    swu_chk = (result.stdout).decode('ascii')
+
+    list_rec = [line for line in swu_chk.split('\n') if 'recommended' in line.lower()
+        and 'recommended' not in line.lower()]
+    list_res = [line for line in swu_chk.split('\n') if 'restart' in line.lower()]
+    list_test = [line for line in swu_chk.split('\n') if 'software' in line.lower()
+        and 'find' not in line.lower()]
+
+    if len(list_rec) != 0:
+        print("\n\nRECOMMENDED Update(s):\n")
+        print(*list_rec, sep='\n')
+        recommended = True
+
+    if len(list_res) != 0:
+        print("\n\nRESTART REQUIRED Update(s):\n")
+        print(*list_res, sep='\n')
+        restart = True
+
+    if len(list_test) != 0:
+        print("\n\nNO AVAILABLE Updates:\n")
+        print(*list_test, sep='\n')
+        test = True
+
+
+
+    return(recommended, restart, soft)
+
+
+
+def f_delete_tmp(file):
+    ## Ensure cli and swu tmp files do NOT exist.
+    ## They will be created as needed.
+    try:
+        os.remove(file)
+    except Exception as e:
+        if e.errno == 2:
+            ## If the file doesn't exist, that's good, so pass.
+            pass
+        elif e.errno == 13:
+            ## If permission to delete file is denied, exit.
+            ## This won't happen if run as root, but catching it anyway.
+            print(f"\nDelete {file} first, then try again.")
+            sys.exit(99)
+        else:
+            ## If something else happens, hold your horses.
+            print(e)
+            sys.exit(999)
+
+
 def main():
     ## Due to the use of f-strings, Python 3.6 is required. Sorry.
     if sys.version_info[:2] == (3, 6):
@@ -98,36 +159,21 @@ def main():
 
     # f_check_root()
 
-    ## Ensure tmp CommandLineTools file does NOT exist.
-    ## It will be created if needed.
-    try:
-        os.remove(v_cli_tmpfile)
-    except Exception as e:
-        if e.errno == 2:
-            ## If the file doesn't exist, that's good, so pass.
-            pass
-        elif e.errno == 13:
-            ## If permission to delete file is denied, exit.
-            ## This won't happen if run as root, but catching it anyway.
-            print(f"\nDelete {v_cli_tmpfile} first, then try again.")
-            sys.exit(99)
-        else:
-            ## If something else happens, hold your horses.
-            print(e)
-            sys.exit(999)
+    files = [v_cli_tmp, v_swu_tmp]
+
+    for file in files:
+        f_delete_tmp(file)
 
     if f_args_count():
         if f_args_check()[0]:
             ## If args.tools is True, install Command Line tools
-            print("tools is true")
             f_install_tools()
 
         if f_args_check()[1]:
             ## If args.force is True, install all updates without confirmation.
-            print("force is true")
             f_install_force()
     else:
-        print("Do more stuff here.")
+        f_check_for_software_updates()
         time.sleep(10)
 
 
@@ -137,7 +183,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt as eki:
         print("\nReceived CTRL+C.\nExiting...\n")
-        sys.exit(0)
+        sys.exit(00)
     except Exception as e:
         print(e)
         sys.exit(1)
