@@ -16,8 +16,7 @@ v_cli_tmp   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 ## =============================== FUNCTIONS ================================ ##
 def f_check_root():
     """
-    Checks to see if user is root.
-    If not, exit the script.
+    If script is not run as root, exit.
     """
     v_euid = os.geteuid()
     if v_euid != 0:
@@ -90,61 +89,96 @@ def f_install_force():
 def f_check_for_software_updates():
     """
     Checks for available software updates.
-    Confirm if user wishes to proceed, if restart is required.
-    If none, exit.
     """
     recommended = False
     restart     = False
-    test        = False
 
     print("\nChecking for software updates. Please wait...\n")
 
     result  = subprocess.run(["softwareupdate", "--list"], stdout=subprocess.PIPE)
     swu_chk = (result.stdout).decode('ascii')
 
-    list_rec = [line for line in swu_chk.split('\n') if 'recommended' in line.lower()
+    chk_rec = [line for line in swu_chk.split('\n') if 'recommended' in line.lower()
         and 'recommended' not in line.lower()]
-    list_res = [line for line in swu_chk.split('\n') if 'restart' in line.lower()]
-    list_test = [line for line in swu_chk.split('\n') if 'software' in line.lower()
-        and 'find' not in line.lower()]
+    chk_res = [line for line in swu_chk.split('\n') if 'restart' in line.lower()]
 
-    if len(list_rec) != 0:
+    if len(chk_rec) != 0:
         print("\n\nRECOMMENDED Update(s):\n")
-        print(*list_rec, sep='\n')
+        print(*chk_rec, sep='\n')
         recommended = True
 
-    if len(list_res) != 0:
+    if len(chk_res) != 0:
         print("\n\nRESTART REQUIRED Update(s):\n")
-        print(*list_res, sep='\n')
+        print(*chk_res, sep='\n')
         restart = True
 
-    if len(list_test) != 0:
-        print("\n\nNO AVAILABLE Updates:\n")
-        print(*list_test, sep='\n')
-        test = True
+    return(recommended, restart, swu_chk)
 
 
+def f_make_update_list(text, type):
+    lines = text.splitlines()
 
-    return(recommended, restart, soft)
+    list_tmp = []
+    for i, line in enumerate(lines):
+        if type == 'recommended':
+            if 'recommended' in line and 'restart' not in line:
+                list_tmp.append(lines[i - 1])
+        elif type == 'restart':
+            if 'restart' in line:
+                list_tmp.append(lines[i - 1])
 
+    list_result = []
+    for i in list_tmp:
+        s = i.split('* ')
+        list_result.append(s[1])
+
+    return list_result
+
+
+def f_prompt_user(text, type):
+    if type == 'recommended':
+        index  = 0
+        prompt = 'RECOMMENDED'
+    elif type == 'restart':
+        index  = 1
+        prompt = 'RESTART REQUIRED'
+    else:
+        print('WTF MATE')
+        sys.exit(9000)
+
+    if text[index] == False:
+        user_chk = False
+        while user_chk == False:
+            print(f"\nInstall {prompt} software update(s)?")
+            v_user_input = input("YES | NO: ")
+            if v_user_input.upper() == 'YES' or v_user_input.upper() == 'Y':
+                f_make_update_list(text[2], type)
+                user_chk = True
+            elif v_user_input.upper() == 'NO' or v_user_input.upper() == 'N':
+                print(f"\nInstallation of {prompt} software updates(s) cancelled.")
+                user_chk = True
+            else:
+                print(f"\nInvalid response: {v_user_input}\nExpected Response: YES or NO")
 
 
 def f_delete_tmp(file):
-    ## Ensure cli and swu tmp files do NOT exist.
-    ## They will be created as needed.
+    """
+    Ensure cli and swu tmp files do NOT exist.
+    They will be created as needed.
+    """
     try:
         os.remove(file)
     except Exception as e:
+        ## If the file doesn't exist, that's good, so pass.
         if e.errno == 2:
-            ## If the file doesn't exist, that's good, so pass.
             pass
+        ## If permission to delete file is denied, exit.
+        ## This won't happen if run as root, but catching it anyway.
         elif e.errno == 13:
-            ## If permission to delete file is denied, exit.
-            ## This won't happen if run as root, but catching it anyway.
             print(f"\nDelete {file} first, then try again.")
             sys.exit(99)
+        ## If something else happens, hold your horses.
         else:
-            ## If something else happens, hold your horses.
             print(e)
             sys.exit(999)
 
@@ -160,21 +194,33 @@ def main():
     # f_check_root()
 
     files = [v_cli_tmp, v_swu_tmp]
-
     for file in files:
         f_delete_tmp(file)
 
     if f_args_count():
-        if f_args_check()[0]:
-            ## If args.tools is True, install Command Line tools
+        v_args_check = f_args_check()
+        ## If args.tools is True, install Command Line tools
+        if v_args_check[0]:
             f_install_tools()
 
-        if f_args_check()[1]:
-            ## If args.force is True, install all updates without confirmation.
+        ## If args.force is True, install all updates without confirmation.
+        if v_args_check[1]:
             f_install_force()
+    ## If no args passed, continue on to interactive section
     else:
-        f_check_for_software_updates()
-        time.sleep(10)
+        pass
+
+    v_swu_check = f_check_for_software_updates()
+    # if v_swu_check[0] == False and v_swu_check[1] == False:
+    #     ## No message to user required, as macOS automatically outputs
+    #     ## "No new software available" if there is no new software available.
+    #     sys.exit(0)
+
+    ## Prompt user to install recommended (no restart) updates
+    f_prompt_user(v_swu_check, 'recommended')
+
+    ## Prompt user to install restart required updates
+    f_prompt_user(v_swu_check, 'restart')
 
 
 ## ================================ RUN IT! ================================= ##
