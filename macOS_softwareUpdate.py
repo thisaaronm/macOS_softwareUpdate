@@ -226,7 +226,7 @@ def main():
             v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
             subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose"])
         except Exception as e:
-            print(e)
+            pass
 
     ## Prompt user to install restart required updates
     if v_swu_check[1] == True:
@@ -235,7 +235,7 @@ def main():
             v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
             subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose", "&&", "reboot"])
         except Exception as e:
-            print(e)
+            pass
 
 
 ## ================================ RUN IT! ================================= ##
