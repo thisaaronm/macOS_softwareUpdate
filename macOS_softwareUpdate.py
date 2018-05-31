@@ -235,3 +235,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(e)
         sys.exit(1)
+    finally:
+        files = [v_cli_tmp, v_swu_tmp]
+        for file in files:
+            f_delete_tmp(file)
