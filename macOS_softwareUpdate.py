@@ -99,7 +99,7 @@ def f_check_for_software_updates():
     swu_chk = (result.stdout).decode('ascii')
 
     chk_rec = [line for line in swu_chk.split('\n') if 'recommended' in line.lower()
-        and 'recommended' not in line.lower()]
+        and 'restart' not in line.lower()]
     chk_res = [line for line in swu_chk.split('\n') if 'restart' in line.lower()]
 
     if len(chk_rec) != 0:
@@ -217,10 +217,12 @@ def main():
     #     sys.exit(0)
 
     ## Prompt user to install recommended (no restart) updates
-    f_prompt_user(v_swu_check, 'recommended')
+    if v_swu_check[0] == True:
+        f_prompt_user(v_swu_check, 'recommended')
 
     ## Prompt user to install restart required updates
-    f_prompt_user(v_swu_check, 'restart')
+    if v_swu_check[1] == True:
+        f_prompt_user(v_swu_check, 'restart')
 
 
 ## ================================ RUN IT! ================================= ##
@@ -229,7 +231,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt as eki:
         print("\nReceived CTRL+C.\nExiting...\n")
-        sys.exit(00)
+        sys.exit(0)
     except Exception as e:
         print(e)
         sys.exit(1)
