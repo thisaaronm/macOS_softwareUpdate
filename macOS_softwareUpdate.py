@@ -159,7 +159,6 @@ def f_prompt_user(text, type):
         elif v_user_input.upper() == 'NO' or v_user_input.upper() == 'N':
             print(f"\nInstallation of {prompt} software updates(s) cancelled.")
             user_chk = True
-            sys.exit()
         else:
             print(f"\nInvalid response: {v_user_input}\nExpected Response: YES or NO\n\n")
 
