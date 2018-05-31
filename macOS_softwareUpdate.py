@@ -118,19 +118,21 @@ def f_check_for_software_updates():
 def f_make_update_list(text, type):
     lines = text.splitlines()
 
-    list_tmp = []
+    list_tmp0 = []
     for i, line in enumerate(lines):
         if type == 'recommended':
             if 'recommended' in line and 'restart' not in line:
-                list_tmp.append(lines[i - 1])
+                list_tmp0.append(lines[i - 1])
         elif type == 'restart':
             if 'restart' in line:
-                list_tmp.append(lines[i - 1])
+                list_tmp0.append(lines[i - 1])
 
-    list_result = []
-    for i in list_tmp:
+    list_tmp1 = []
+    for i in list_tmp0:
         s = i.split('* ')
-        list_result.append(s[1])
+        list_tmp1.append(s[1])
+
+    list_result = " ".join(list_tmp1)
 
     return list_result
 
@@ -151,13 +153,16 @@ def f_prompt_user(text, type):
         print(f"\nInstall {prompt} software update(s)?")
         v_user_input = input("YES | NO: ")
         if v_user_input.upper() == 'YES' or v_user_input.upper() == 'Y':
-            f_make_update_list(text[2], type)
             user_chk = True
+
+            return(text[2], type)
         elif v_user_input.upper() == 'NO' or v_user_input.upper() == 'N':
             print(f"\nInstallation of {prompt} software updates(s) cancelled.")
             user_chk = True
+            sys.exit()
         else:
-            print(f"\nInvalid response: {v_user_input}\nExpected Response: YES or NO")
+            print(f"\nInvalid response: {v_user_input}\nExpected Response: YES or NO\n\n")
+
 
 
 def f_delete_tmp(file):
@@ -217,11 +222,15 @@ def main():
 
     ## Prompt user to install recommended (no restart) updates
     if v_swu_check[0] == True:
-        f_prompt_user(v_swu_check, 'recommended')
+        v_prompt_user = f_prompt_user(v_swu_check, 'recommended')
+        v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
+        subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose"])
 
     ## Prompt user to install restart required updates
     if v_swu_check[1] == True:
-        f_prompt_user(v_swu_check, 'restart')
+        v_prompt_user = f_prompt_user(v_swu_check, 'restart')
+        v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
+        subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose", "&&", "reboot"])
 
 
 ## ================================ RUN IT! ================================= ##
