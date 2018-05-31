@@ -9,7 +9,6 @@ import argparse
 
 ## =============================== VARIABLES ================================ ##
 v_max_args  = 2
-v_swu_tmp   = "/tmp/.macOS_softwareupdate_tempfile"
 v_cli_tmp   = "/tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress"
 
 
@@ -195,10 +194,7 @@ def main():
         sys.exit(9)
 
     # f_check_root()
-
-    files = [v_cli_tmp, v_swu_tmp]
-    for file in files:
-        f_delete_tmp(file)
+    f_delete_tmp(v_cli_tmp)
 
     if f_args_count():
         v_args_check = f_args_check()
@@ -249,6 +245,4 @@ if __name__ == "__main__":
         print(e)
         sys.exit(1)
     finally:
-        files = [v_cli_tmp, v_swu_tmp]
-        for file in files:
-            f_delete_tmp(file)
+        f_delete_tmp(v_cli_tmp)
