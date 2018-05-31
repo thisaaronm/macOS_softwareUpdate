@@ -146,19 +146,18 @@ def f_prompt_user(text, type):
         print('WTF MATE')
         sys.exit(9000)
 
-    if text[index] == False:
-        user_chk = False
-        while user_chk == False:
-            print(f"\nInstall {prompt} software update(s)?")
-            v_user_input = input("YES | NO: ")
-            if v_user_input.upper() == 'YES' or v_user_input.upper() == 'Y':
-                f_make_update_list(text[2], type)
-                user_chk = True
-            elif v_user_input.upper() == 'NO' or v_user_input.upper() == 'N':
-                print(f"\nInstallation of {prompt} software updates(s) cancelled.")
-                user_chk = True
-            else:
-                print(f"\nInvalid response: {v_user_input}\nExpected Response: YES or NO")
+    user_chk = False
+    while user_chk == False:
+        print(f"\nInstall {prompt} software update(s)?")
+        v_user_input = input("YES | NO: ")
+        if v_user_input.upper() == 'YES' or v_user_input.upper() == 'Y':
+            f_make_update_list(text[2], type)
+            user_chk = True
+        elif v_user_input.upper() == 'NO' or v_user_input.upper() == 'N':
+            print(f"\nInstallation of {prompt} software updates(s) cancelled.")
+            user_chk = True
+        else:
+            print(f"\nInvalid response: {v_user_input}\nExpected Response: YES or NO")
 
 
 def f_delete_tmp(file):
