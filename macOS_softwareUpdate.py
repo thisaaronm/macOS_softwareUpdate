@@ -221,15 +221,21 @@ def main():
 
     ## Prompt user to install recommended (no restart) updates
     if v_swu_check[0] == True:
-        v_prompt_user = f_prompt_user(v_swu_check, 'recommended')
-        v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
-        subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose"])
+        try:
+            v_prompt_user = f_prompt_user(v_swu_check, 'recommended')
+            v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
+            subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose"])
+        except Exception as e:
+            print(e)
 
     ## Prompt user to install restart required updates
     if v_swu_check[1] == True:
-        v_prompt_user = f_prompt_user(v_swu_check, 'restart')
-        v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
-        subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose", "&&", "reboot"])
+        try:
+            v_prompt_user = f_prompt_user(v_swu_check, 'restart')
+            v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
+            subprocess.run(["softwareupdate", "--install", "{v_update_list}", "--verbose", "&&", "reboot"])
+        except Exception as e:
+            print(e)
 
 
 ## ================================ RUN IT! ================================= ##
