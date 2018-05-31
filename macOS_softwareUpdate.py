@@ -150,7 +150,7 @@ def f_prompt_user(text, type):
 
     user_chk = False
     while user_chk == False:
-        print(f"\nInstall {prompt} software update(s)?")
+        print(f"\n\n---\nInstall {prompt} software update(s)?")
         v_user_input = input("YES | NO: ")
         if v_user_input.upper() == 'YES' or v_user_input.upper() == 'Y':
             user_chk = True
