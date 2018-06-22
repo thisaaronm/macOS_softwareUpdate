@@ -79,11 +79,14 @@ def f_install_force():
     If [-f|--force] is passed, install updates with no confirmation.
     """
     print("\nInstalling ALL software update(s) in 10 seconds, followed by a reboot. \
-    \nTo cancel, press CTRL+C...\n")
+        \nTo cancel, press CTRL+C...\n")
     time.sleep(10)
-
     subprocess.run(["softwareupdate", "--install", "--all", "--verbose", "&&", "reboot"])
 
+    print("\nInstallation of ALL software update(s) complete. Rebooting in 10 seconds. \
+    \nTo cancel, press CTRL+C...\n")
+    time.sleep(10)
+    subprocess.run("reboot")
 
 def f_check_for_software_updates():
     """
@@ -127,6 +130,7 @@ def f_make_update_list(text, type):
                 list_tmp0.append(lines[i - 1])
 
     list_tmp1 = []
+
     for i in list_tmp0:
         s = i.split('* ')
         list_tmp1.append(s[1])
@@ -154,7 +158,7 @@ def f_prompt_user(text, type):
         if v_user_input.upper() == 'YES' or v_user_input.upper() == 'Y':
             user_chk = True
 
-            return(text[2], type)
+            return(text, type)
         elif v_user_input.upper() == 'NO' or v_user_input.upper() == 'N':
             print(f"\nInstallation of {prompt} software updates(s) cancelled.")
             user_chk = True
@@ -165,11 +169,14 @@ def f_prompt_user(text, type):
 
 def f_delete_tmp(file):
     """
-    Ensure cli and swu tmp files do NOT exist.
+    Ensure tmp files do NOT exist.
     They will be created as needed.
     """
     try:
         os.remove(file)
+    except KeyboardInterrupt as eki:
+        print("\n\nReceived CTRL+C.\nExiting...\n")
+        sys.exit(0)
     except Exception as e:
         ## If the file doesn't exist, that's good, so pass.
         if e.errno == 2:
@@ -210,26 +217,27 @@ def main():
         pass
 
     v_swu_check = f_check_for_software_updates()
-    # if v_swu_check[0] == False and v_swu_check[1] == False:
-    #     ## No message to user required, as macOS automatically outputs
-    #     ## "No new software available" if there is no new software available.
-    #     sys.exit(0)
+    if v_swu_check[0] == False and v_swu_check[1] == False:
+        ## No message to user required, as macOS automatically outputs
+        ## "No new software available" if there is no new software available.
+        sys.exit(0)
 
-    ## Prompt user to install recommended (no restart) updates
-    if v_swu_check[0] == True:
+    ## Prompt user to install updates
+    if v_swu_check[0] or v_swu_check[1]:
         try:
-            v_prompt_user = f_prompt_user(v_swu_check, 'recommended')
-            v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
-            subprocess.run(["softwareupdate", "--install", f"{v_update_list}", "--verbose"])
-        except Exception as e:
-            pass
+            if v_swu_check[0]:
+                v_prompt_user = f_prompt_user(v_swu_check[2], 'recommended')
+                v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
+                subprocess.run(["softwareupdate", "--install", v_update_list, "--verbose"])
 
-    ## Prompt user to install restart required updates
-    if v_swu_check[1] == True:
-        try:
-            v_prompt_user = f_prompt_user(v_swu_check, 'restart')
-            v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
-            subprocess.run(["softwareupdate", "--install", f"{v_update_list}", "--verbose", "&&", "reboot"])
+            if v_swu_check[1]:
+                v_prompt_user = f_prompt_user(v_swu_check[2], 'restart')
+                v_update_list = f_make_update_list(v_prompt_user[0], v_prompt_user[1])
+                subprocess.run(["softwareupdate", "--install", v_update_list, "--verbose"])
+                subprocess.run("reboot")
+        except KeyboardInterrupt as eki:
+            print("\n\nReceived CTRL+C.\nExiting...\n")
+            sys.exit(0)
         except Exception as e:
             pass
 
@@ -239,7 +247,7 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt as eki:
-        print("\nReceived CTRL+C.\nExiting...\n")
+        print("\n\nReceived CTRL+C.\nExiting...\n")
         sys.exit(0)
     except Exception as e:
         print(e)
